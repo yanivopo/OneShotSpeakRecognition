@@ -89,7 +89,7 @@ if __name__ == '__main__':
     else:
         triplet_model.model.load_weights(os.path.join(model_dir_path, weight_name))
     triplet_model.load_embedded_model()
-   # results = compare_model()
+    results = compare_model()
     results2 = model_top_k()
 
 
