@@ -3,18 +3,19 @@ from oneShot.model import Triplet
 
 from oneShot.data_generator import DataGeneratorLoad
 
-DO_TRAINING = False
+DO_TRAINING = True
 model_dir_path = './save_model'
 output_dir_path = './output'
-weight_name = 'weights_full_model-improvement-41-0.79.hdf5'
+weight_name = 'temp_weights-improvement-19-7.05.hdf5'
 model_name = 'model.json'
 train_data_path = 'D:\\dataset\\woxceleb\\temp_train'
 valid_data_path = 'D:\\dataset\\woxceleb\\temp_valid'
-xvector_model = Triplet(epochs=1)
+xvector_model = Triplet(epochs=20)
 if DO_TRAINING:
     training_generator = DataGeneratorLoad(data_dir_name=train_data_path, step_per_epoch=300)
-    valid_generator = DataGeneratorLoad(data_dir_name=valid_data_path, step_per_epoch=10)
-    xvector_model.fit(training_generator, valid_generator, save_model=False)
+    valid_generator = DataGeneratorLoad(data_dir_name=valid_data_path, step_per_epoch=70)
+    xvector_model.model.load_weights(os.path.join(model_dir_path, weight_name))
+    history = xvector_model.fit(training_generator, valid_generator, save_model=True)
 else:
     xvector_model.model.load_weights(os.path.join(model_dir_path, weight_name))
 
@@ -86,45 +87,56 @@ def test_nn(n, k, dir):
     return percent_correct
 
 
-def random_result():
+def random_result(n_way_number=20):
     result = []
     sample_number = 1000
-    n_way_number = 20
+#    n_way_number = 20
     for j in range(1, n_way_number, 2):
         temp = np.random.choice(np.arange(j), sample_number)
         result.append(100*(np.sum(temp == 0) / sample_number))
     return result
 
-#ֳֳtest_nn(10, 50, dir)
-dir_train = "D:\\dataset\\woxceleb\\new_fft_train"
-dir_valid = "D:\\dataset\\woxceleb\\new_fft_valid"
-number_of_sample = 100
-results = [[], [], []]
-n_way_number = 20
-for i in range(1, n_way_number, 2):
-    results[0].append(test_oneshot(xvector_model.model, i, number_of_sample, dir_train))
-    results[1].append(test_oneshot(xvector_model.model, i, number_of_sample, dir_valid))
-    results[2].append(test_nn(i, number_of_sample, dir_train))
 
 from matplotlib import pyplot as plt
+# dir_train = "D:\\dataset\\woxceleb\\new_fft_train"
+# dir_valid = "D:\\dataset\\woxceleb\\new_fft_valid"
+# number_of_sample = 100
+# results = [[], [], [], []]
+# n_way_number = 20
+# for i in range(1, n_way_number, 2):
+#     results[0].append(test_oneshot(xvector_model.model, i, number_of_sample, dir_train))
+#     results[1].append(test_oneshot(xvector_model.model, i, number_of_sample, dir_valid))
+#     results[2].append(test_nn(i, number_of_sample, dir_train))
+#
+# results[3].extend(random_result(n_way_number))
 
-plt.plot(np.arange(1, n_way_number, 2), results[0], label='train')
-plt.plot(np.arange(1, n_way_number, 2), results[1], label='valid')
-plt.plot(np.arange(1, n_way_number, 2), results[2], label='nearest neighbor')
-plt.plot(np.arange(1, n_way_number, 2), results[3], label='random')
-plt.plot(np.arange(1, n_way_number, 2), results[4], label='without training')
-plt.xlabel("Number of possible class")
-plt.ylabel("Accuracy")
-plt.legend()
+#
+# plt.plot(np.arange(1, n_way_number, 2), results[0], label='train')
+# plt.plot(np.arange(1, n_way_number, 2), results[1], label='valid')
+# plt.plot(np.arange(1, n_way_number, 2), results[2], label='nearest neighbor')
+# plt.plot(np.arange(1, n_way_number, 2), results[3], label='random')
+# #plt.plot(np.arange(1, n_way_number, 2), results[4], label='without training')
+# plt.xlabel("Number of possible class")
+# plt.ylabel("Accuracy")
+# plt.legend()
 
-plt.show()
 
-# import pickle
+
+import pickle
 # with open('./outputs/NwayResults.pkl', 'wb') as f:
 #     pickle.dump(results, f)
 
 
-
+s = history.history
+# with open('./outputs/history_1.pkl', 'wb') as f:
+#     pickle.dump(s, f)
+plt.figure()
+plt.plot(s['val_loss'], label='val_loss')
+plt.plot(s['loss'], label='loss')
+plt.legend()
+plt.xlabel("epochs")
+plt.ylabel("loss")
+plt.show()
 
 
 

@@ -4,7 +4,7 @@ import tensorflow as tf
 from keras.callbacks import ModelCheckpoint
 import soundfile as sf
 import numpy as np
-from tqdm import tqdm
+#from tqdm import tqdm
 import pickle
 import os
 from oneShot.cnn_model import Cnn
