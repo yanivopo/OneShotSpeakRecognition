@@ -8,6 +8,7 @@ import numpy as np
 import pickle
 import os
 from oneShot.cnn_model import Cnn
+from oneShot.data_process_util import make_oneshot
 from oneShot.wave_reader import get_fft_spectrum
 #from keras.utils import plot_model
 
@@ -59,8 +60,22 @@ class Triplet:
         self.load_embedded_model()
         return history
 
-    def evaluate_model(self, number_of_batch=1, dir_name='temp_train', top_of_k=5):
-        pass
+    def evaluate_model(self, dir_name, n=10, number_of_sample=10, top_of_k=1):
+        n_correct = 0
+        right_class = 0   # The correct class always in the 0 position.
+        for i in range(number_of_sample):
+            inputs = make_oneshot(dir_name, n)
+            triplet_output = self.model.predict(inputs[0])
+            triplet_output_diff = triplet_output[:, 0] - triplet_output[:, 1]
+            triplet_output = np.linalg.norm(triplet_output_diff, axis=1)
+            print("The predict class", np.argmin(triplet_output))
+            sort_min = np.argsort(triplet_output, axis=0)
+            if right_class in sort_min[:top_of_k]:
+            #if np.argmin(triplet_output) == 0:  # 0 is the index of the correct class
+                n_correct += 1
+        percent_correct = (100.0 * n_correct / number_of_sample)
+        print("Got an average of {}% {} way one-shot learning accuracy \n".format(percent_correct, n))
+        return percent_correct
 
     def load_embedded_model(self):
         inputs_q = Input(shape=(*self.data_dim, 1), name='q_input')

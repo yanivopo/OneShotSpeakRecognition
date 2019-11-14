@@ -4,6 +4,7 @@ from oneShot import wave_reader
 import concurrent.futures
 import soundfile as sf
 import shutil
+import random
 
 
 output_path = 'D:\\dataset\\woxceleb\\temp_yaniv'
@@ -58,6 +59,31 @@ def reduce_dir(lt, output_dir=output_path, input_dir='D:\\dataset\\woxceleb\\yan
             shutil.copy(full_file_name_path, output_dir+'\\' + lt + '\\'+str(count)+'.wav')
             count += 1
 
+
+def make_oneshot(dir, N=16, dim=(512, 299), n_channels=1):
+    list_dir = os.listdir(dir)
+    q_batch = np.empty((N, *dim, n_channels)).astype(np.float16)
+    p_batch = np.empty((N, *dim, n_channels)).astype(np.float16)
+    n_batch = np.empty((N, *dim, n_channels)).astype(np.float16)
+    # triple_batch = 3 * batch
+    data_idx = np.random.choice(list_dir, size=N, replace=False)
+    s = os.listdir(os.path.join(dir, data_idx[0]))
+    choice_one_idx = random.sample(s, k=2)
+    q = np.load(os.path.join(os.path.join(dir, data_idx[0]), choice_one_idx[0]))
+    p = np.load(os.path.join(os.path.join(dir, data_idx[0]), choice_one_idx[1]))
+    q_batch[0] = q[:, :, np.newaxis]
+    p_batch[0] = p[:, :, np.newaxis]
+    n_batch[0] = q[:, :, np.newaxis]   # not in used.
+    for i in range(1, N):
+        s = os.listdir(os.path.join(dir, data_idx[i]))
+        choice_wrong_idx = random.sample(s, k=1)
+        p = np.load(os.path.join(os.path.join(dir, data_idx[i]), choice_wrong_idx[0]))
+        q_batch[i] = q[:, :, np.newaxis]
+        p_batch[i] = p[:, :, np.newaxis]
+        q_batch[i] = q[:, :, np.newaxis]  # not in used.
+    triplet_batch = ({'q_input': q_batch, 'p_input': p_batch, 'n_input': q_batch},
+                     {'output': np.ones(N)})
+    return triplet_batch
 
 if __name__ == '__main__':
 

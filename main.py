@@ -1,74 +1,11 @@
 import os
 from oneShot.model import Triplet
-
 from oneShot.data_generator import DataGeneratorLoad
-
-DO_TRAINING = True
-model_dir_path = './save_model'
-output_dir_path = './output'
-weight_name = 'temp_weights-improvement-19-7.05.hdf5'
-model_name = 'model.json'
-train_data_path = 'D:\\dataset\\woxceleb\\temp_train'
-valid_data_path = 'D:\\dataset\\woxceleb\\temp_valid'
-xvector_model = Triplet(epochs=20)
-if DO_TRAINING:
-    training_generator = DataGeneratorLoad(data_dir_name=train_data_path, step_per_epoch=300)
-    valid_generator = DataGeneratorLoad(data_dir_name=valid_data_path, step_per_epoch=70)
-    xvector_model.model.load_weights(os.path.join(model_dir_path, weight_name))
-    history = xvector_model.fit(training_generator, valid_generator, save_model=True)
-else:
-    xvector_model.model.load_weights(os.path.join(model_dir_path, weight_name))
-
-# xvector_model.evaluate_model(1, train_data_path)
-xvector_model.load_embedded_model()
-wave_file = ".\\save_model\\merge.wav"
-
+from oneShot.data_process_util import make_oneshot
+from matplotlib import pyplot as plt
 import numpy as np
-import random
+DO_TRAINING = False
 
-
-def make_oneshot(dir, N=16, dim=(512, 299), n_channels=1):
-    list_dir = os.listdir(dir)
-    q_batch = np.empty((N, *dim, n_channels)).astype(np.float16)
-    p_batch = np.empty((N, *dim, n_channels)).astype(np.float16)
-    n_batch = np.empty((N, *dim, n_channels)).astype(np.float16)
-    # triple_batch = 3 * batch
-    data_idx = np.random.choice(list_dir, size=N, replace=False)
-    s = os.listdir(os.path.join(dir, data_idx[0]))
-    choice_one_idx = random.sample(s, k=2)
-    q = np.load(os.path.join(os.path.join(dir, data_idx[0]), choice_one_idx[0]))
-    p = np.load(os.path.join(os.path.join(dir, data_idx[0]), choice_one_idx[1]))
-    q_batch[0] = q[:, :, np.newaxis]
-    p_batch[0] = p[:, :, np.newaxis]
-    n_batch[0] = q[:, :, np.newaxis]   # not in used.
-    for i in range(1, N):
-        s = os.listdir(os.path.join(dir, data_idx[i]))
-        choice_wrong_idx = random.sample(s, k=1)
-        p = np.load(os.path.join(os.path.join(dir, data_idx[i]), choice_wrong_idx[0]))
-        q_batch[i] = q[:, :, np.newaxis]
-        p_batch[i] = p[:, :, np.newaxis]
-        q_batch[i] = q[:, :, np.newaxis]  # not in used.
-    triplet_batch = ({'q_input': q_batch, 'p_input': p_batch, 'n_input': q_batch},
-                     {'output': np.ones(N)})
-    return triplet_batch
-
-
-def test_oneshot(model, n, k, dir):
-    n_correct = 0
-    for i in range(k):
-        inputs = make_oneshot(dir, n)
-        triplet_output = model.predict(inputs[0])
-        triplet_output_diff = triplet_output[:, 0] - triplet_output[:, 1]
-        triplet_output = np.linalg.norm(triplet_output_diff, axis=1)
-        print("The predict class", np.argmin(triplet_output))
-        if np.argmin(triplet_output) == 0:   # 0 is the index of the correct class
-            n_correct += 1
-    percent_correct = (100.0 * n_correct / k)
-    print("Got an average of {}% {} way one-shot learning accuracy \n".format(percent_correct, n))
-    return percent_correct
-
-
-#test_oneshot(xvector_model.model, 4, 50, dir)
 
 def test_nn(n, k, dir):
     n_correct = 0
@@ -87,56 +24,79 @@ def test_nn(n, k, dir):
     return percent_correct
 
 
-def random_result(n_way_number=20):
+def random_result(min_n_way=1, n_way_number=20):
     result = []
     sample_number = 1000
-#    n_way_number = 20
-    for j in range(1, n_way_number, 2):
+
+    for j in range(min_n_way, n_way_number, 2):
         temp = np.random.choice(np.arange(j), sample_number)
         result.append(100*(np.sum(temp == 0) / sample_number))
     return result
 
 
-from matplotlib import pyplot as plt
-# dir_train = "D:\\dataset\\woxceleb\\new_fft_train"
-# dir_valid = "D:\\dataset\\woxceleb\\new_fft_valid"
-# number_of_sample = 100
-# results = [[], [], [], []]
-# n_way_number = 20
-# for i in range(1, n_way_number, 2):
-#     results[0].append(test_oneshot(xvector_model.model, i, number_of_sample, dir_train))
-#     results[1].append(test_oneshot(xvector_model.model, i, number_of_sample, dir_valid))
-#     results[2].append(test_nn(i, number_of_sample, dir_train))
-#
-# results[3].extend(random_result(n_way_number))
-
-#
-# plt.plot(np.arange(1, n_way_number, 2), results[0], label='train')
-# plt.plot(np.arange(1, n_way_number, 2), results[1], label='valid')
-# plt.plot(np.arange(1, n_way_number, 2), results[2], label='nearest neighbor')
-# plt.plot(np.arange(1, n_way_number, 2), results[3], label='random')
-# #plt.plot(np.arange(1, n_way_number, 2), results[4], label='without training')
-# plt.xlabel("Number of possible class")
-# plt.ylabel("Accuracy")
-# plt.legend()
-
+def compare_model():
+    dir_train = "D:\\dataset\\woxceleb\\new_fft_train"
+    dir_valid = "D:\\dataset\\woxceleb\\new_fft_valid"
+    number_of_sample = 100
+    results = [[], [], [], []]
+    n_way_number = 5
+    min_n_way = 3
+    for i in range(min_n_way, n_way_number, 2):
+        results[0].append(triplet_model.evaluate_model(dir_train, i, number_of_sample))
+        results[1].append(triplet_model.evaluate_model(dir_valid, i, number_of_sample))
+        results[2].append(test_nn(i, number_of_sample, dir_train))
+    results[3].extend(random_result(min_n_way, n_way_number))
+    plt.plot(np.arange(min_n_way, n_way_number, 2), results[0], label='train')
+    plt.plot(np.arange(min_n_way, n_way_number, 2), results[1], label='valid')
+    plt.plot(np.arange(min_n_way, n_way_number, 2), results[2], label='nearest neighbor')
+    plt.plot(np.arange(min_n_way, n_way_number, 2), results[3], label='random')
+    plt.xlabel("Number of possible class")
+    plt.ylabel("Accuracy")
+    plt.legend()
+    plt.show()
+    return results
 
 
-import pickle
-# with open('./outputs/NwayResults.pkl', 'wb') as f:
-#     pickle.dump(results, f)
+def model_top_k():
+    dir_valid = "D:\\dataset\\woxceleb\\new_fft_valid"
+    number_of_sample = 200
+    n_way_number = 15
+    results_k = []
+    for k, j in enumerate(range(n_way_number, 21)):
+        results_k.append([])
+        for i in range(1, 6):
+            results_k[k].append(triplet_model.evaluate_model(dir_valid, j, number_of_sample, top_of_k=i))
+    # plt.plot(np.arange(1, 6), results_k, label='n_way:{}'.format(n_way_number))
+    # plt.xlabel("Number of Top K")
+    # plt.ylabel("Accuracy")
+    # plt.legend()
+    # plt.show()
+    return results_k
 
 
-s = history.history
-# with open('./outputs/history_1.pkl', 'wb') as f:
-#     pickle.dump(s, f)
-plt.figure()
-plt.plot(s['val_loss'], label='val_loss')
-plt.plot(s['loss'], label='loss')
-plt.legend()
-plt.xlabel("epochs")
-plt.ylabel("loss")
-plt.show()
+if __name__ == '__main__':
+    model_dir_path = './save_model'
+    output_dir_path = './output'
+    weight_name = 'temp_weights-improvement-19-7.05.hdf5'
+    model_name = 'model.json'
+    train_data_path = 'D:\\dataset\\woxceleb\\temp_train'
+    valid_data_path = 'D:\\dataset\\woxceleb\\temp_valid'
+    triplet_model = Triplet(epochs=1)
+    if DO_TRAINING:
+        training_generator = DataGeneratorLoad(data_dir_name=train_data_path, step_per_epoch=300)
+        valid_generator = DataGeneratorLoad(data_dir_name=valid_data_path, step_per_epoch=70)
+        triplet_model.model.load_weights(os.path.join(model_dir_path, weight_name))
+    else:
+        triplet_model.model.load_weights(os.path.join(model_dir_path, weight_name))
+    triplet_model.load_embedded_model()
+   # results = compare_model()
+    results2 = model_top_k()
+
+
+    # import pickle
+    # with open('./outputs/TOP_K.pkl', 'wb') as f:
+    #         pickle.dump(results2, f)
+
 
 
 
