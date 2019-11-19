@@ -20,5 +20,5 @@ One-shot learning is an object categorization problem in computer vision. Wherea
 * `--output-dir` - path to output folder (contains figures results etc.)
 * `--weight-name` - model's weight file name
 * `--model-name` - model's file name
-* `mode` - train / validation mode
+* `mode` - train from scratch / load existing model 
 * For more optional arguments use `--help`

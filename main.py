@@ -35,9 +35,9 @@ def random_result(min_n_way=1, n_way_number=20):
     return result
 
 
-def compare_model(dir_train, dir_valid):
-    # dir_train = "D:\\dataset\\woxceleb\\new_fft_train"
-    # dir_valid = "D:\\dataset\\woxceleb\\new_fft_valid"
+def compare_model():
+    dir_train = "D:\\dataset\\woxceleb\\new_fft_train"
+    dir_valid = "D:\\dataset\\woxceleb\\new_fft_valid"
     number_of_sample = 100
     results = [[], [], [], []]
     n_way_number = 5
@@ -58,7 +58,7 @@ def compare_model(dir_train, dir_valid):
     return results
 
 
-def model_top_k(dir_valid = "D:\\dataset\\woxceleb\\new_fft_valid"):
+def model_top_k(dir_valid="D:\\dataset\\woxceleb\\new_fft_valid"):
     number_of_sample = 200
     n_way_number = 15
     results_k = []
@@ -75,73 +75,59 @@ def model_top_k(dir_valid = "D:\\dataset\\woxceleb\\new_fft_valid"):
 
 
 if __name__ == '__main__':
-    model_dir_path = './save_model'
-    output_dir_path = './output'
-    weight_name = 'temp_weights-improvement-19-7.05.hdf5'
-    model_name = 'model.json'
-    train_data_path = 'D:\\dataset\\woxceleb\\temp_train'
-    valid_data_path = 'D:\\dataset\\woxceleb\\temp_valid'
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('-mdp', '--model-dir-path',
+                        type=str,
+                        default='./save_model',
+                        help='dir of saved model')
+
+    parser.add_argument('-od', '--output-dir',
+                        type=str,
+                        default='./output',
+                        help='output path')
+
+    parser.add_argument('-wn', '--weight-name',
+                        type=str,
+                        default='temp_weights-improvement-19-7.05.hdf5',
+                        help='weights file name')
+
+    parser.add_argument('-mn', '--model-name',
+                        type=str,
+                        default='model.json',
+                        help='model file name')
+
+    parser.add_argument('-tdp', '--train-data-path',
+                        type=str,
+                        default='D:\\dataset\\woxceleb\\temp_train',
+                        help='path to train dataset')
+
+    parser.add_argument('-vdp', '--valid-data-path',
+                        type=str,
+                        default='D:\\dataset\\woxceleb\\temp_valid',
+                        help='path to validation dataset')
+
+    parser.add_argument('-m', '--mode',
+                        choices=['train', 'load'],
+                        default='load',
+                        help='Whether to train new model or load existing model')
+
+    parser.add_argument('-te', '--run_test_evaluate',
+                        choices=['True', 'False'],
+                        default='False',
+                        help='Whether to run evaluate method to compare the algorithm ')
+
+    FLAGS, unparsed = parser.parse_known_args()
+
     triplet_model = Triplet(epochs=1)
-    if DO_TRAINING:
-        training_generator = DataGeneratorLoad(data_dir_name=train_data_path, step_per_epoch=300)
-        valid_generator = DataGeneratorLoad(data_dir_name=valid_data_path, step_per_epoch=70)
-        triplet_model.model.load_weights(os.path.join(model_dir_path, weight_name))
+    if FLAGS.mode == 'train':
+        training_generator = DataGeneratorLoad(data_dir_name=FLAGS.train_data_path, step_per_epoch=300)
+        valid_generator = DataGeneratorLoad(data_dir_name=FLAGS.valid_data_path, step_per_epoch=70)
+        history = triplet_model.fit(training_generator, valid_generator, save_model=True,
+                                    save_model_dir=FLAGS.model_dir_path)
     else:
-        triplet_model.model.load_weights(os.path.join(model_dir_path, weight_name))
+        triplet_model.model.load_weights(os.path.join(FLAGS.model_dir_path, FLAGS.weight_name))
     triplet_model.load_embedded_model()
-    results = compare_model(train_data_path, valid_data_path)
-    results2 = model_top_k()
-
-    # import pickle
-    # with open('./outputs/TOP_K.pkl', 'wb') as f:
-    #         pickle.dump(results2, f)
-
-    # parser = argparse.ArgumentParser()
-    #
-    # parser.add_argument('-mdp', '--model-dir-path',
-    #                     type=str,
-    #                     default='./save_model',
-    #                     help='dir of saved model')
-    #
-    # parser.add_argument('-od', '--output-dir',
-    #                     type=str,
-    #                     default='./output',
-    #                     help='output path')
-    #
-    # parser.add_argument('-wn', '--weight-name',
-    #                     type=str,
-    #                     default='temp_weights-improvement-19-7.05.hdf5',
-    #                     help='weights file name')
-    #
-    # parser.add_argument('-mn', '--model-name',
-    #                     type=str,
-    #                     default='model.json',
-    #                     help='model file name')
-    #
-    # parser.add_argument('-tdp', '--train-data-path',
-    #                     type=str,
-    #                     default='D:\\dataset\\woxceleb\\temp_train',
-    #                     help='path to train dataset')
-    #
-    # parser.add_argument('-vdp', '--valid-data-path',
-    #                     type=str,
-    #                     default='D:\\dataset\\woxceleb\\temp_valid',
-    #                     help='path to validation dataset')
-    #
-    # parser.add_argument('-m', '--mode',
-    #                     choices=['train', 'valid'],
-    #                     default='valid',
-    #                     help='Whether to train or validate')
-    #
-    # FLAGS, unparsed = parser.parse_known_args()
-    #
-    # triplet_model = Triplet(epochs=1)
-    # if FLAGS.mode == 'train':
-    #     training_generator = DataGeneratorLoad(data_dir_name=FLAGS.train_data_path, step_per_epoch=300)
-    #     valid_generator = DataGeneratorLoad(data_dir_name=FLAGS.valid_data_path, step_per_epoch=70)
-    #     triplet_model.model.load_weights(os.path.join(FLAGS.model_dir_path, FLAGS.weight_name))
-    # else:
-    #     triplet_model.model.load_weights(os.path.join(FLAGS.model_dir_path, FLAGS.weight_name))
-    # triplet_model.load_embedded_model()
-    # results = compare_model(FLAGS.train_data_path, FLAGS.valid_data_path)
-    # results2 = model_top_k()
+    if FLAGS.run_test_evaluate == 'True':
+        results = compare_model()
+        results2 = model_top_k()

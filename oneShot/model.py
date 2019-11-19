@@ -2,14 +2,12 @@ from keras.layers import Input, concatenate, Reshape
 from keras import Model
 import tensorflow as tf
 from keras.callbacks import ModelCheckpoint
-import soundfile as sf
 import numpy as np
 #from tqdm import tqdm
 import pickle
 import os
 from oneShot.cnn_model import Cnn
 from oneShot.data_process_util import make_oneshot
-from oneShot.wave_reader import get_fft_spectrum
 #from keras.utils import plot_model
 
 
@@ -46,11 +44,12 @@ class Triplet:
         model.summary()
         return model
 
-    def fit(self, training_generator, valid_generator,  save_model=True, save_model_name='temp'):
+    def fit(self, training_generator, valid_generator,  save_model=True, save_model_dir='temp'):
         self.model.compile(optimizer=self.optimizer, loss=triplet_loss)
+        save_file_name = "_weights-improvement-{epoch:02d}-{val_loss:.2f}.hdf5"
         callbacks_list = []
         if save_model:
-            filepath = save_model_name + "_weights-improvement-{epoch:02d}-{val_loss:.2f}.hdf5"
+            filepath = os.path.join(save_model_dir, save_file_name)
             model_check_point = ModelCheckpoint(filepath, monitor='val_loss', save_best_only=True)
             callbacks_list.append(model_check_point)
 
