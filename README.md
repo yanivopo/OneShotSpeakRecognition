@@ -12,22 +12,25 @@ One-shot learning is an object categorization problem in computer vision. Wherea
 ---------------------------------------------------------------  
 #### How to Use?
 * clone the repo
-* cd to the cloned dir
+* cd to the cloned dir 
+* conda create -n oneShotWox python=3.6 
+* conda activate oneShotWox 
+* pip install -r path\to\requirements.txt 
 
 The original data can be found in `http://www.robots.ox.ac.uk/~vgg/data/voxceleb` (~30 GB).
 #### pre process of woxceleb 
 
 ##### split the data to 3 sec and stft transfrom: 
-`python data_process_util.py -i path/to/woxceleb/dataset -o path/to/outputdir ` 
+`python data_process_util.py -i path\to\woxceleb\dataset -o path\to\outputdir ` 
 ##### create offline triplet:  
-`python oneShot/data_generator.py -i path/to/preProcess/data `
+`python oneShot/data_generator.py -i path\to\preProcess\data `
 ##### Optional Args: 
 * `--batch-size` - # batch size.
 * `--number-of-batch-train` - # different batch for the train.
 * `--number-of-batch-valid` - # different batch for the validation.
 
 ### To Run example: 
-* `python main.py`
+* `python main.py -tdp path\to\dir\of\preProcess\data`
 
 #### Optional Args:
 * `--train-data-path` - path to pre-process data the same dir for data_process_util.py output.
