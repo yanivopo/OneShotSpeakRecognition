@@ -9,6 +9,8 @@ import keras
 import random
 import os
 import pickle
+import argparse
+from tqdm import tqdm
 
 
 class DataGeneratorCreate(keras.utils.Sequence):
@@ -23,8 +25,10 @@ class DataGeneratorCreate(keras.utils.Sequence):
 
     def __batch_generation(self, arr_list, index):
         # Initialization
-        batch = [np.empty((self.batch_size, *self.dim, self.n_channels)).astype(np.float16)]
-        triple_batch = 3 * batch
+        q_batch = np.empty((self.batch_size, *self.dim, self.n_channels)).astype(np.float16)
+        p_batch = np.empty((self.batch_size, *self.dim, self.n_channels)).astype(np.float16)
+        n_batch = np.empty((self.batch_size, *self.dim, self.n_channels)).astype(np.float16)
+        #triple_batch = 3 * batch
         data_idx = np.random.choice(arr_list, size=(self.batch_size, 2))
         full_dir_name_one_idx = np.core.defchararray.add(self.dir_name + '\\', data_idx[:, 0])
         full_dir_name_sec_idx = np.core.defchararray.add(self.dir_name + '\\', data_idx[:, 1])
@@ -37,10 +41,10 @@ class DataGeneratorCreate(keras.utils.Sequence):
             q = np.load(os.path.join(full_dir_name_one_idx[i], choice_one_idx[0]))
             p = np.load(os.path.join(full_dir_name_one_idx[i], choice_one_idx[1]))
             n = np.load(os.path.join(full_dir_name_sec_idx[i], choice_sec_idx[0]))
-            triple_batch[0][i, ] = q[:, :, np.newaxis]
-            triple_batch[1][i, ] = p[:, :, np.newaxis]
-            triple_batch[2][i, ] = n[:, :, np.newaxis]
-        triplet_batch = ({'q_input': triple_batch[0], 'p_input': triple_batch[1], 'n_input': triple_batch[2]},
+            q_batch[i] = q[:, :, np.newaxis]
+            p_batch[i] = p[:, :, np.newaxis]
+            n_batch[i] = n[:, :, np.newaxis]
+        triplet_batch = ({'q_input': q_batch, 'p_input': p_batch, 'n_input': n_batch},
                          {'output': np.ones(self.batch_size)})
         with open(self.output_dir + str(index) + '.pkl', 'wb') as handle:
             pickle.dump(triplet_batch, handle)
@@ -78,11 +82,50 @@ class DataGeneratorLoad(keras.utils.Sequence):
         return batch_load
 
 
+def create_triplet(dir_input, mode, number_of_batch, batch_size):
+    print("create {} triplet".format(mode))
+    dir_full_input = os.path.join(dir_input, mode)
+    dir_output = os.path.join(dir_input, 'triplet_{}\\'.format(mode))
+    if not os.path.exists(dir_output):
+        os.mkdir(dir_output)
+    generator_create = DataGeneratorCreate(dir_full_input, step_per_epoch=number_of_batch,
+                                           output_dir=dir_output, batch_size=batch_size)
+    for _ in tqdm(generator_create):
+        pass
+
+
+def main(flags):
+    dir_input = flags.input_dataProcess_path
+    batch_size = flags.batch_size
+    number_of_batch_train = flags.number_of_batch_train
+    number_of_batch_valid = flags.number_of_batch_valid
+    mode = 'train'
+
+    create_triplet(dir_input, mode, number_of_batch_train, batch_size)
+    mode = 'valid'
+    create_triplet(dir_input, mode, number_of_batch_valid, batch_size)
+
+
 if __name__ == '__main__':
-    params = {'dim': (512, 299),
-              'batch_size': 16,
-              'n_channels': 1}
-    generator_create = DataGeneratorCreate("D:\\dataset\\woxceleb\\new_fft_valid", step_per_epoch=3,
-                                           output_dir='C:\\Users\\USER\\Desktop\\Master\\Xvector\\data\\batch_valid\\', **params)
-    generator_load = DataGeneratorLoad(step_per_epoch=1,
-                                       data_dir_name='C:\\Users\\USER\\Desktop\\Master\\Xvector\\data\\batch_train\\')
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-i', '--input-dataProcess-path',
+                        type=str,
+                        required=True,
+                        help='full path of woxceleb dataset')
+
+    parser.add_argument('-b', '--batch-size',
+                        type=int,
+                        help='The number of batch size')
+
+    parser.add_argument('-nt', '--number-of-batch-train',
+                        type=int,
+                        default=5000,
+                        help='The number of different batch for the train')
+
+    parser.add_argument('-nv', '--number-of-batch-valid',
+                        type=int,
+                        default=500,
+                        help='The number of different batch for the valid')
+
+    FLAGS, unparsed = parser.parse_known_args()
+    main(FLAGS)

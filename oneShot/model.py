@@ -3,11 +3,9 @@ from keras import Model
 import tensorflow as tf
 from keras.callbacks import ModelCheckpoint
 import numpy as np
-#from tqdm import tqdm
-import pickle
 import os
 from oneShot.cnn_model import Cnn
-from oneShot.data_process_util import make_oneshot
+from data_process_util import make_oneshot
 #from keras.utils import plot_model
 
 
