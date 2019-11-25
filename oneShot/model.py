@@ -68,7 +68,6 @@ class Triplet:
             print("The predict class", np.argmin(triplet_output))
             sort_min = np.argsort(triplet_output, axis=0)
             if right_class in sort_min[:top_of_k]:
-            #if np.argmin(triplet_output) == 0:  # 0 is the index of the correct class
                 n_correct += 1
         percent_correct = (100.0 * n_correct / number_of_sample)
         print("Got an average of {}% {} way one-shot learning accuracy \n".format(percent_correct, n))
