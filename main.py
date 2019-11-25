@@ -5,7 +5,6 @@ from data_process_util import make_oneshot
 from matplotlib import pyplot as plt
 import numpy as np
 import argparse
-DO_TRAINING = False
 
 
 def test_nn(n, k, dir):
